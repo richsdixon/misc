@@ -45,7 +45,8 @@ h1 {
 }
 input[type="search"],
 select,
-button {
+button,
+.multi-select summary {
     box-sizing: border-box;
     width: 100%;
     min-height: 38px;
@@ -140,6 +141,85 @@ button:hover {
 }
 #maximumAbv {
     z-index: 4;
+}
+.multi-select {
+    position: relative;
+}
+.multi-select summary {
+    position: relative;
+    padding-right: 30px;
+    cursor: pointer;
+    list-style: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.multi-select summary::-webkit-details-marker {
+    display: none;
+}
+.multi-select summary::after {
+    position: absolute;
+    top: 9px;
+    right: 11px;
+    content: "▼";
+    font-size: 12px;
+}
+.multi-select[open] summary::after {
+    content: "▲";
+}
+.multi-options {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 100%;
+    width: max-content;
+    max-width: 360px;
+    padding: 8px;
+    border: 1px solid #b8c2d1;
+    border-radius: 6px;
+    background: white;
+    box-shadow: 0 5px 16px rgba(0, 0, 0, 0.16);
+}
+.multi-actions {
+    display: flex;
+    gap: 7px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid #e0e5ec;
+}
+.multi-actions button {
+    width: auto;
+    min-height: 28px;
+    padding: 4px 10px;
+    color: #1f4e78;
+    font-size: 12px;
+    background: #edf3f8;
+    border-color: #c5d1dd;
+}
+.multi-actions button:hover {
+    background: #dce8f1;
+}
+.type-options {
+    max-height: 260px;
+    overflow-y: auto;
+    padding-top: 5px;
+}
+.multi-option {
+    display: flex !important;
+    gap: 8px;
+    align-items: flex-start;
+    margin: 0 !important;
+    padding: 6px 5px;
+    font-size: 13px !important;
+    font-weight: normal !important;
+    cursor: pointer;
+    border-radius: 4px;
+}
+.multi-option:hover {
+    background: #eef4fa;
+}
+.multi-option input {
+    margin: 2px 0 0;
 }
 .result-count {
     margin: 0 0 10px;
@@ -246,10 +326,17 @@ button:hover {
     </div>
 
     <div class="filter">
-        <label for="typeFilter">Type</label>
-        <select id="typeFilter">
-            <option value="">All types</option>
-        </select>
+        <label>Type</label>
+        <details id="typeFilter" class="multi-select">
+            <summary id="typeSummary">All types</summary>
+            <div class="multi-options">
+                <div class="multi-actions">
+                    <button id="selectAllTypes" type="button">All</button>
+                    <button id="clearAllTypes" type="button">None</button>
+                </div>
+                <div id="typeOptions" class="type-options"></div>
+            </div>
+        </details>
     </div>
 
     <div class="filter">
@@ -1941,6 +2028,8 @@ const keywordFilter = document.getElementById("keywordFilter");
 const countryFilter = document.getElementById("countryFilter");
 const brewerFilter = document.getElementById("brewerFilter");
 const typeFilter = document.getElementById("typeFilter");
+const typeSummary = document.getElementById("typeSummary");
+const typeOptions = document.getElementById("typeOptions");
 const abvSort = document.getElementById("abvSort");
 const resultCount = document.getElementById("resultCount");
 
@@ -1963,6 +2052,61 @@ function populateDropdown(select, columnIndex) {
     values.forEach(value => {
         select.add(new Option(value, value));
     });
+}
+
+function getTypeCheckboxes() {
+    return Array.from(
+        typeOptions.querySelectorAll('input[type="checkbox"]')
+    );
+}
+
+function updateTypeSummary() {
+    const checkboxes = getTypeCheckboxes();
+    const selected = checkboxes.filter(checkbox => checkbox.checked);
+
+    if (selected.length === checkboxes.length) {
+        typeSummary.textContent = "All types";
+    } else if (selected.length === 0) {
+        typeSummary.textContent = "No types";
+    } else if (selected.length === 1) {
+        typeSummary.textContent = selected[0].value;
+    } else {
+        typeSummary.textContent = `${selected.length} types selected`;
+    }
+
+    typeSummary.title = selected
+        .map(checkbox => checkbox.value)
+        .join(", ");
+}
+
+function populateTypeOptions() {
+    const values = [...new Set(
+        rows.map(row => cellText(row, 5)).filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b));
+
+    values.forEach((value, index) => {
+        const label = document.createElement("label");
+        const checkbox = document.createElement("input");
+        const text = document.createElement("span");
+
+        label.className = "multi-option";
+        checkbox.type = "checkbox";
+        checkbox.value = value;
+        checkbox.id = `typeOption${index}`;
+        checkbox.checked = true;
+        text.textContent = value;
+
+        checkbox.addEventListener("change", () => {
+            updateTypeSummary();
+            applyFilters();
+        });
+
+        label.appendChild(checkbox);
+        label.appendChild(text);
+        typeOptions.appendChild(label);
+    });
+
+    updateTypeSummary();
 }
 
 function updateSliderDisplay(minimum, maximum) {
@@ -2048,6 +2192,12 @@ function applyFilters(event) {
 
     const keyword = keywordFilter.value.trim().toLowerCase();
 
+    const selectedTypes = new Set(
+        getTypeCheckboxes()
+            .filter(checkbox => checkbox.checked)
+            .map(checkbox => checkbox.value)
+    );
+
     const fullAbvRange =
         minimum <= absoluteMinimum &&
         maximum >= absoluteMaximum;
@@ -2072,9 +2222,7 @@ function applyFilters(event) {
             !brewerFilter.value ||
             brewer === brewerFilter.value;
 
-        const typeMatches =
-            !typeFilter.value ||
-            type === typeFilter.value;
+        const typeMatches = selectedTypes.has(type);
 
         const abvMatches = Number.isFinite(abv)
             ? abv >= minimum && abv <= maximum
@@ -2100,32 +2248,59 @@ function applyFilters(event) {
         `Showing ${visibleRows} of ${rows.length} drinks`;
 }
 
+function setAllTypes(checked) {
+    getTypeCheckboxes().forEach(checkbox => {
+        checkbox.checked = checked;
+    });
+
+    updateTypeSummary();
+    applyFilters();
+}
+
 function resetFilters() {
     minimumSlider.value = absoluteMinimum;
     maximumSlider.value = absoluteMaximum;
     keywordFilter.value = "";
     countryFilter.value = "";
     brewerFilter.value = "";
-    typeFilter.value = "";
     abvSort.value = "default";
+
+    getTypeCheckboxes().forEach(checkbox => {
+        checkbox.checked = true;
+    });
+
+    updateTypeSummary();
     applyFilters();
 }
 
 populateDropdown(countryFilter, 0);
 populateDropdown(brewerFilter, 1);
-populateDropdown(typeFilter, 5);
+populateTypeOptions();
 
 minimumSlider.addEventListener("input", applyFilters);
 maximumSlider.addEventListener("input", applyFilters);
 keywordFilter.addEventListener("input", applyFilters);
 countryFilter.addEventListener("change", applyFilters);
 brewerFilter.addEventListener("change", applyFilters);
-typeFilter.addEventListener("change", applyFilters);
 abvSort.addEventListener("change", applyFilters);
+
+document
+    .getElementById("selectAllTypes")
+    .addEventListener("click", () => setAllTypes(true));
+
+document
+    .getElementById("clearAllTypes")
+    .addEventListener("click", () => setAllTypes(false));
 
 document
     .getElementById("resetFilters")
     .addEventListener("click", resetFilters);
+
+document.addEventListener("click", event => {
+    if (!typeFilter.contains(event.target)) {
+        typeFilter.open = false;
+    }
+});
 
 applyFilters();
 </script>
