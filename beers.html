@@ -1,0 +1,2036 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beer List</title>
+<style>
+:root {
+    font-family: Arial, Helvetica, sans-serif;
+    color: #172033;
+    background: #f4f7fb;
+}
+body {
+    margin: 0;
+    padding: 24px;
+}
+.container {
+    max-width: 1800px;
+    margin: auto;
+}
+h1 {
+    margin: 0 0 18px;
+}
+.filters {
+    display: grid;
+    grid-template-columns: minmax(320px, 2fr) repeat(3, minmax(160px, 1fr)) auto;
+    gap: 16px;
+    align-items: end;
+    padding: 18px;
+    margin-bottom: 16px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+.filter label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 13px;
+    font-weight: bold;
+}
+select,
+button {
+    width: 100%;
+    min-height: 38px;
+    padding: 7px 10px;
+    border: 1px solid #b8c2d1;
+    border-radius: 6px;
+    background: white;
+}
+button {
+    cursor: pointer;
+    color: white;
+    background: #1f4e78;
+    border-color: #1f4e78;
+}
+button:hover {
+    background: #163a5a;
+}
+.abv-values {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    font-size: 13px;
+}
+.dual-range {
+    position: relative;
+    width: 100%;
+    height: 32px;
+}
+.slider-track,
+.slider-selection {
+    position: absolute;
+    top: 13px;
+    height: 6px;
+    border-radius: 999px;
+}
+.slider-track {
+    left: 0;
+    right: 0;
+    background: #cfd5de;
+}
+.slider-selection {
+    background: #3478f6;
+}
+.dual-range input[type="range"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 32px;
+    margin: 0;
+    padding: 0;
+    pointer-events: none;
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+}
+.dual-range input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px;
+    background: transparent;
+    border: 0;
+}
+.dual-range input[type="range"]::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+    margin-top: -8px;
+    pointer-events: auto;
+    cursor: grab;
+    appearance: none;
+    -webkit-appearance: none;
+    border: 2px solid white;
+    border-radius: 50%;
+    background: #3478f6;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+.dual-range input[type="range"]::-moz-range-track {
+    height: 6px;
+    background: transparent;
+    border: 0;
+}
+.dual-range input[type="range"]::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    pointer-events: auto;
+    cursor: grab;
+    border: 2px solid white;
+    border-radius: 50%;
+    background: #3478f6;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+#minimumAbv {
+    z-index: 3;
+}
+#maximumAbv {
+    z-index: 4;
+}
+.result-count {
+    margin: 0 0 10px;
+    font-weight: bold;
+}
+.table-wrapper {
+    overflow-x: auto;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+.beer-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+.beer-table th {
+    position: sticky;
+    top: 0;
+    padding: 11px;
+    color: white;
+    text-align: left;
+    background: #1f4e78;
+}
+.beer-table td {
+    padding: 10px 11px;
+    vertical-align: top;
+    border-bottom: 1px solid #e0e5ec;
+}
+.beer-table tbody tr:nth-child(even) {
+    background: #f5f8fc;
+}
+.beer-table tbody tr:hover {
+    background: #e6f0f8;
+}
+.beer-table td:last-child {
+    min-width: 400px;
+    white-space: pre-line;
+}
+@media (max-width: 1000px) {
+    .filters {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+@media (max-width: 600px) {
+    body {
+        padding: 12px;
+    }
+    .filters {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Beer List</h1>
+<div class="filters">
+    <div class="filter">
+        <label>ABV range</label>
+        <div class="abv-values">
+            <span id="minimumAbvLabel"></span>
+            <span id="maximumAbvLabel"></span>
+        </div>
+        <div class="dual-range" id="dualRange">
+            <div class="slider-track"></div>
+            <div class="slider-selection" id="sliderSelection"></div>
+            <input
+                id="minimumAbv"
+                type="range"
+                min="0.5"
+                max="12.5"
+                step="0.1"
+                value="0.5"
+                aria-label="Minimum ABV">
+            <input
+                id="maximumAbv"
+                type="range"
+                min="0.5"
+                max="12.5"
+                step="0.1"
+                value="12.5"
+                aria-label="Maximum ABV">
+        </div>
+    </div>
+    <div class="filter">
+        <label for="countryFilter">Country</label>
+        <select id="countryFilter">
+            <option value="">All countries</option>
+        </select>
+    </div>
+    <div class="filter">
+        <label for="brewerFilter">Brewer</label>
+        <select id="brewerFilter">
+            <option value="">All brewers</option>
+        </select>
+    </div>
+    <div class="filter">
+        <label for="typeFilter">Type</label>
+        <select id="typeFilter">
+            <option value="">All types</option>
+        </select>
+    </div>
+    <button id="resetFilters" type="button">Reset filters</button>
+</div>
+<p id="resultCount" class="result-count"></p>
+<div class="table-wrapper">
+<table class="dataframe beer-table" id="beerTable">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Country</th>
+      <th>Brewer</th>
+      <th>Beer</th>
+      <th>Serve</th>
+      <th>Kegs</th>
+      <th>Type</th>
+      <th>ABV</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>US</td>
+      <td>3 Sons</td>
+      <td>8 Track Throwback x Xul</td>
+      <td>1/3rd</td>
+      <td>3</td>
+      <td>Imperial Stout</td>
+      <td>12.5%</td>
+      <td>In collaboration with our homies Xul!! This imperial stout was treated with copious amounts of peanuts and 240lbs of marshmallow</td>
+    </tr>
+    <tr>
+      <td>US</td>
+      <td>3 Sons</td>
+      <td>Sunshine Innovation</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>IPA</td>
+      <td>6.5%</td>
+      <td>Hazy NZ DDH IPA hopped exclusively with Freestyle Nectaron and Wai Iti cold pressed</td>
+    </tr>
+    <tr>
+      <td>US</td>
+      <td>3 Sons</td>
+      <td>Above The Clouds</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>IPA</td>
+      <td>7%</td>
+      <td>Thiolized hazy double dry hopped IPA with Citra, Amarillo, Cryo Pop, and Idaho 7</td>
+    </tr>
+    <tr>
+      <td>LV</td>
+      <td>Arpus</td>
+      <td>Nelson x Simcoe x Superdelic West Coast</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>West Coast IPA</td>
+      <td>6.2%</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>LV</td>
+      <td>Arpus</td>
+      <td>Hazelnut Vanilla Coffee Ice Cream Stout</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Imperial Stout</td>
+      <td>9.3%</td>
+      <td>Allergens: Lactose, Nuts</td>
+    </tr>
+    <tr>
+      <td>LV</td>
+      <td>Arpus</td>
+      <td>Blackcurrant x Raspberry x Mango x Pineapple x Coconut x Vanilla x Almond Sour x Tripping Animals</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Fruited Sour</td>
+      <td>4.5%</td>
+      <td>Allergens: Nuts</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Ascension Cider</td>
+      <td>Vindemium Cultis Malum</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Cider</td>
+      <td>6.1%</td>
+      <td>Rosetta / Pinot\nAllergens: Sulphites</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Ascension Cider</td>
+      <td>Mothership</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Cider</td>
+      <td>6%</td>
+      <td>A Medium Dry blend of cider and fresh apple juice.\nAllergens: Sulphites</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Ascension Cider</td>
+      <td>Eclosion 2025</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Cider</td>
+      <td>8.2%</td>
+      <td>Wild fermented cider. Russet single variety\nAllergens: Sulphites</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Ascension Cider</td>
+      <td>Cool in the Pool</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Radler</td>
+      <td></td>
+      <td>Lemon Lime Radler Collab with Abyss Brewing\nAllergens: Sulphites, Gluten</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Ascension Cider</td>
+      <td>Pilot</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Cider</td>
+      <td>4.8%</td>
+      <td>Super Juicy Cider\nAllergens: Sulphites</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Azvex</td>
+      <td>Monster Aquarium</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Pale</td>
+      <td>5.2%</td>
+      <td>Motueka &amp; Nelson Sauvin</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Azvex</td>
+      <td>Hubble Tension</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Hazy IPA</td>
+      <td>7.2%</td>
+      <td>Nelson Sauvin, Rakau &amp; Krush</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Azvex</td>
+      <td>Huffman Tree</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>IPA</td>
+      <td>6.2%</td>
+      <td>Mosaic &amp; Nelson Sauvin</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Azvex</td>
+      <td>One Drop - Operation Genome 26.05</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Fruited Sour</td>
+      <td>6%</td>
+      <td>Mango &amp; Blackberry Ice Cream sour with Aussie smoothie legends One Drop\nAllergens: Lactose</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Balance</td>
+      <td>Pressing Matters - Pinot Noir Pomace</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Fruited Mixed Ferm</td>
+      <td>6%</td>
+      <td>Pinot noir and pomace wild ale</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Balance</td>
+      <td>Ripple 2025 - with Raspberries</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Fruited Mixed Ferm</td>
+      <td>5.5%</td>
+      <td>Ripple is a blend of two barrels fermented with saison yeast, lactobacillus and brettanomyces before ageing for two months on carbonically macerated British Raspberries.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Balance</td>
+      <td>Saison de Maison - Blend 12</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Mixed Ferm</td>
+      <td>5%</td>
+      <td>A mixed culture, barrel fermented saison dry hopped with British Goldings. A beautifully simple grist of low colour Maris Otter and torrefied wheat, mashed high to retain dextrins for secondary fermentation, brings delicate bready notes and a clean, soft background for the yeast and hop character to shine.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Beak</td>
+      <td>Poutine</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Hazy DIPA</td>
+      <td>8%</td>
+      <td>Celebrating These Hills, our festival showcasing the world's best beer, this DIPA is brewed with the sublime Brasserie Du Bas-Canada, and is brewed with Bestmalz light pilsner malt, Haze Heaven yeast from WHC, and excessively hopped with our hand selected Citra and Mosaic from Yakima Chief hops, supported by Riwaka and Nectaron.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Beak</td>
+      <td>Squeeze</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Pale</td>
+      <td>4%</td>
+      <td>Squeeze is our breezy pale ale, bursting with flavour and brewed for maximum suppability. Soft and hazy, it’s loaded with Motueka and Citra juiciness, while Columbus and Idaho 7 lend a subtle punch of dankness that keeps things beautifully balanced.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Beak</td>
+      <td>Pier</td>
+      <td>1/2th</td>
+      <td>2</td>
+      <td>DDH Pale</td>
+      <td>5%</td>
+      <td>Brewed in collaboration with some of the finest drinking establishments in Brighton, this double dry hopped Pale Ale is a celebration of the vibrancy and community of our closest city</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Beak</td>
+      <td>Louie</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Witbeer</td>
+      <td>5.2%</td>
+      <td>A super refreshing witbier brewed to classic Belgian standards using oats, wheat, spices and orange peel. Hazy, spritzy and bursting with flavours of marmalade, clove and lemon verbena. Enjoy!</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Beak</td>
+      <td>Greens x Other Half</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>TIPA</td>
+      <td>10%</td>
+      <td>This massive Triple IPA brewed with New York giants Other Half is absolutely drenched in our finest and freshest Citra, Nelson Sauvin, Galaxy and Motueka, for a genuine hop bomb.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Beer52</td>
+      <td>These Hills DDH Table Pale</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Table Beer</td>
+      <td>3.4%</td>
+      <td>Produced for These Hills Festival by Beer52, a very soft and easy-drinking table pale ale with bright citrus and tropical hop character. The body is extremely light and smooth, almost a cloudy mouthfeel. Bitterness stays low, keeping the beer very refreshing but very flavourfull at the same time. It finishes clean, juicy and gently fruity without feeling heavy.</td>
+    </tr>
+    <tr>
+      <td>CA</td>
+      <td>Brasserie Du Bas</td>
+      <td>Hypa12</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Hazy IPA</td>
+      <td>6.5%</td>
+      <td>India Pale Ale with hops Citra, Riwaka &amp; Topaz</td>
+    </tr>
+    <tr>
+      <td>CA</td>
+      <td>Brasserie Du Bas</td>
+      <td>Los Tabernacos</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Milkshake IPA</td>
+      <td>6.5%</td>
+      <td>Allergens: Lactose</td>
+    </tr>
+    <tr>
+      <td>CA</td>
+      <td>Brasserie Du Bas</td>
+      <td>Commodus</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Hazy DIPA</td>
+      <td>8.2%</td>
+      <td>Double IPA with hops Nelson Sauvin, Nectaron, Motueka &amp; Riwaka</td>
+    </tr>
+    <tr>
+      <td>US</td>
+      <td>Brujos</td>
+      <td>Sacrilegio</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>West Coast IPA</td>
+      <td>6.6%</td>
+      <td>DDH West Coast Style India Pale Ale featuring some of our absolutely favorite West Coast IPA hops such as Krush, Mosaic, Mosaic Cryo &amp; our newly contracted 2026 Nectaron from Freestyle Hops</td>
+    </tr>
+    <tr>
+      <td>US</td>
+      <td>Brujos</td>
+      <td>NOBOSUMA x Uchu</td>
+      <td>1/3rd</td>
+      <td>4</td>
+      <td>QIPA</td>
+      <td>12%</td>
+      <td>2x Mash Tm / 2x DH / Quadruple Hazy India Pale Ale brewed with our favorite blend of wheats and oats, featuring Rakau, Eclipse, Citra &amp; Citra Hyperboost</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Burning Sky</td>
+      <td>Piquette</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Mixed Ferm</td>
+      <td>5.6%</td>
+      <td>Westwell Wines provided us with lightly pressed Chardonnay grape skins refermented in water. Aged further with mixed fermentation beer, we are pleased to challenge the perception of beer and wine – what they are and what they can be.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Burning Sky</td>
+      <td>Parcelle Blanc</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Fruited Mixed Ferm</td>
+      <td>5.8%</td>
+      <td>A blend of foedre beer and barrels, aged for three months on Pinot Meunier grape skins from Westwell Wines. Aromas of strawberries and dark currants, with some gentle tannins on the finish.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Burning Sky</td>
+      <td>Luppoleto</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Italian Pils</td>
+      <td>4.6%</td>
+      <td>Brewed with Pilsner malt and noble German hop varieties, fermented cold then dry hopped and lagered for an extended period. Flavours of cereal malt combined with citrus and grassy hop aromas, Crisp Finish\nAllergens: Gluten Free</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Burning Sky</td>
+      <td>Quench</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Pale</td>
+      <td>5.2%</td>
+      <td>Sumptuous malts, apparent but easy going bitterness to allow full flavours of the Nelson Sauvin and Riwaka hop schedule. White grape, gooseberry and passionfruit to the fore!</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Burnt Mill</td>
+      <td>White Mountain</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Pale</td>
+      <td>4.4%</td>
+      <td>White Mountain is classic take on a Californian Pale brewed with Comet, Cascade and Amarillo hops for a taste of the West. Sweet citrus fruits are anchored perfectly by a pine backdrop and a resinous finish. A grist of extra pale, wheat and a touch of crystal malt creates a clean and crisp balance to complete the beer</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Burnt Mill</td>
+      <td>Nitro Big Sur Moon</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Porter</td>
+      <td>4.2%</td>
+      <td>A base of Vienna and Munich malts, then layered with a mix of speciality malts to create a rich wort that we blended with Cocoa husks to amplify the chocolate notes from the malts. The final result is a smooth and rich, easy drinking porter</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Burnt Mill</td>
+      <td>Todos Santos</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Gose</td>
+      <td>4.8%</td>
+      <td>Drawing from a beer we brewed in our first year with our graphic designer, Josh Smith, Todos Santos is a take on a Mexican-inspired Gose. Big pineapple aromas come from this beer with a light tartness, which is gradually washed away with a subtle salinity for a refreshing fruited Gose.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Burnt Mill</td>
+      <td>Bright Seas x Beak</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>West Coast IPA</td>
+      <td>6%</td>
+      <td>West Coast collab with Beak, Krush and Simcoe</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Cloudwater</td>
+      <td>Kyema - BA Raspberry</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Fruited Mixed Ferm</td>
+      <td>7.2%</td>
+      <td>Kyema is a blend of wine barrel-aged beer and our foudre base beer, conditioned for six months in bottle and refermented on 500kg of fresh raspberries. The fruit leads with jammy depth and a gentle sharpness, layered over soft, yoghurt-like acidity and lifted citrus notes. Rounding out with a subtle funk rounds it out. The finished beer is complex, expressive and will slowly evolve over time</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Cloudwater</td>
+      <td>Protosynthesis</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Table Beer</td>
+      <td>3.4%</td>
+      <td>Leaning into Spring, we've foraged wild nettle tips and gorse flowers to be steeped in the hop gun, allowing nature's ingredients to steer this flavour profile. Floral coconut flavours of the gorse flowers blend seamlessly with green earthiness from the nettle tips. We’ve also added hops Saaz and Sabro in the mix to back up the soft floral notes and round off this light sessionable spring ale into a clean and delicate offering. Made for longer days and brighter nights</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Cloudwater</td>
+      <td>Everyday Affairs</td>
+      <td>1/2th</td>
+      <td>2</td>
+      <td>DDH IPA</td>
+      <td>7%</td>
+      <td>Bold, juicy, smooth. A revisit to a beloved beer of years gone by. Strata CGX, NZ Cascade &amp; Idaho 7 overflow each drop with bright tropical fruits, light citrus and a clean herbal dankness on the finish</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Cloudwater</td>
+      <td>Fruit Sour Peach</td>
+      <td>1/2th</td>
+      <td>2</td>
+      <td>Fruited Sour</td>
+      <td>4.5%</td>
+      <td>Feeling peachy! Summer wouldn’t be complete without a tangy and refreshing Peach Sour. A base of tart acidity blends seamlessly with the juicy sweetness of 100% natural peach puree, perfectly balancing this into what can only be described as sunshine-in-a-glass.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Cloudwater</td>
+      <td>Hooked On Nectaron</td>
+      <td>1/2th</td>
+      <td>2</td>
+      <td>DDH IPA</td>
+      <td>6%</td>
+      <td>The latest in our Hooked on DDH IPA series. For this iteration, we’ve delved into the world of Nectaron, an intensely aromatic and fruit forward New Zealand hop. Bursting with bold tropical notes such as tart passionfruit, sweet pineapple, ripe peach and citrus, this Hooked On is full of character. A thick, chewy body perfectly accentuated by ultra smooth drinkability</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Deya</td>
+      <td>Steady Rolling Nelson</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Pale</td>
+      <td>5.2%</td>
+      <td>Our iconic pale ale dry hopped exclusively with freshly harvested crop year 2026 and hand selected Nelson Sauvin at 12g/l from Freestyle Hops.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Deya</td>
+      <td>Simcoe Pils</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Lager</td>
+      <td>4.4%</td>
+      <td>Simcoe Pils is our house Pilsner (Tappy Pils) lightly dry hopped with Simcoe for beautiful, lemon and sweet pine hop aroma and flavour. Clean, bright, and super refreshing.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Deya</td>
+      <td>Sound Machine Groove</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>DIPA</td>
+      <td>8%</td>
+      <td>The Sound Machine Grooves is a world where the Salamander and the Hotel Frog exist. This gorgeous DIPA is dripping in Nelson Sauvin, Krush, Citra BBC and Idaho 7.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Deya</td>
+      <td>Break Me Into Bigger Pieces</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Hazy IPA</td>
+      <td>6.5%</td>
+      <td>A classic DEYA IPA featuring a heady dry hop of Citra, Motueka, Dolcita and Riwaka alongside lemon and lime zest. A true citrus delight!</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Donzoko</td>
+      <td>Edge of Town</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>West Coast IPA</td>
+      <td>5.5%</td>
+      <td>Edge of Town is a West Coast IPA. Rippingly bitter, with American hops Chinook, Columbus and Citra heavy in the whirlpool and dry hop. Intense resinous pine and spikey grapefruit is backed up with sweet caramel malt. Perfect for those who like things full on</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Donzoko</td>
+      <td>Delicioso</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Lager</td>
+      <td>5.3%</td>
+      <td>Export Lager</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Donzoko</td>
+      <td>Donmai x Minoh</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Japanese Rice Lager</td>
+      <td>5.5%</td>
+      <td>Our collaboration with Japan’s legendary Minoh Beer. It pours with a beautiful hazy glow, bursting with tropical citrus flavours and a fluffy mouthfeel from the koji rice, alongside a satisfying dryness</td>
+    </tr>
+    <tr>
+      <td>SE</td>
+      <td>Elmeleven</td>
+      <td>Star Maker (MELT)</td>
+      <td>1/3rd</td>
+      <td>3</td>
+      <td>Imperial Stout</td>
+      <td>10%</td>
+      <td>Dark Chocolate Marble Cake Imperial MELT Stout!</td>
+    </tr>
+    <tr>
+      <td>SE</td>
+      <td>Elmeleven</td>
+      <td>Nothing To Declare (PULP)</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Smoothie Sour</td>
+      <td>5%</td>
+      <td>Banana Coconut Vanilla and a Whisper of Cinnamon PULP! Loaded with banana, coconut and vanilla ice cream and just the right amount of cinnamon!</td>
+    </tr>
+    <tr>
+      <td>SE</td>
+      <td>Elmeleven</td>
+      <td>Home Star (PULP)</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Smoothie Sour</td>
+      <td>5%</td>
+      <td>Red Berries &amp; Pomegranate PULP!</td>
+    </tr>
+    <tr>
+      <td>US</td>
+      <td>Evil Twin</td>
+      <td>Drink Me And I'll Make Your Wildest Dreams Come True</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>West Coast IPA</td>
+      <td>6.5%</td>
+      <td>Hopped with Chinook, Citra, &amp; Comet.</td>
+    </tr>
+    <tr>
+      <td>US</td>
+      <td>Evil Twin</td>
+      <td>Dry Hopped With Summer Itself</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>DDH IPA</td>
+      <td>6.2%</td>
+      <td>Double dry-hopped with Citra &amp; Riwaka.</td>
+    </tr>
+    <tr>
+      <td>US</td>
+      <td>Evil Twin</td>
+      <td>Make It Fruity Tiger's Blood</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Fruited Sour</td>
+      <td>4.5%</td>
+      <td>Brewed with watermelon, strawberry, &amp; coconut.</td>
+    </tr>
+    <tr>
+      <td>FI</td>
+      <td>Factory</td>
+      <td>Patterns</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Hazy DIPA</td>
+      <td>8%</td>
+      <td>A Hazy DIPA with Nelson Sauvin &amp; Nectaron "With Patterns we used Rakau in the whirlpool and it was then dry hopped with Nectaron and Nelson Sauvin. Expect a complex set of earthy and fruity aromas. Grapefruit, stone fruits, white wine and white pepper earthiness."</td>
+    </tr>
+    <tr>
+      <td>FI</td>
+      <td>Factory</td>
+      <td>Reveries of Nelson</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Hazy IPA</td>
+      <td>7.3%</td>
+      <td>Nelson Sauvin Single Hop Hazy IPA "Nelson Sauvin - the pride of New Zealand! I've always had a strong relationship with Nelson Sauvin; I love drinking it and brewing with it, but I've never made a Single Hop IPA using Nelson. Now is the time! It's bursting with aromas of fresh grapes, white wine, white pepper, grapefruit, a bit of tropical notes and that beautiful New Zealand earthy funk!"</td>
+    </tr>
+    <tr>
+      <td>FI</td>
+      <td>Factory</td>
+      <td>Collective Minds</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>West Coast DIPA</td>
+      <td>7.8%</td>
+      <td>A West Coast DIPA with Nelson Sauvin, Riwaka &amp; El Dorado Cryo. "We absolutely love Nelson Sauvin in West Coast Ipas. We wanted to balance out the complex earthy white wine and peppery notes of Nelson with stone fruit and tropical fruitiness from Riwaka and El Dorado."</td>
+    </tr>
+    <tr>
+      <td>FR</td>
+      <td>Fauve</td>
+      <td>Cité Secrète x Vault City</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Fruited Sour</td>
+      <td>8.5%</td>
+      <td>As longtime fans of Vault City’s sours, it was a joy to finally collaborate with the Scottish masters of the style! We loved developing the recipe together, drawing inspiration from their work, and brewing this Imperial Pastry Sour alongside them. We aimed to live up to their reputation by really dialing up the fruitiness with ultra-generous amounts of raspberry, strawberry, and vanilla.</td>
+    </tr>
+    <tr>
+      <td>FR</td>
+      <td>Fauve</td>
+      <td>Quelque Chose qui Danse en Toi</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>DDH Hazy DIPA</td>
+      <td>7.7%</td>
+      <td>This Double NEIPA marks a return to our roots for Fauve. After numerous collaborations with international breweries that challenged our approach to dry-hopping, we’ve finally channeled everything we learned into this beer to push the exotic profiles of Nectaron, Citra, and Sabro to the limit. The result: an explosion of aroma featuring fresh pineapple, ripe mango, and coconut. Enjoy!</td>
+    </tr>
+    <tr>
+      <td>FR</td>
+      <td>Fauve</td>
+      <td>Reçu Cinq sur Cinq</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>DDH IPA</td>
+      <td>6.2%</td>
+      <td>A DDH NEIPA featuring Citra, Nelson Sauvin, and Nectaron hops.</td>
+    </tr>
+    <tr>
+      <td>US</td>
+      <td>Finback</td>
+      <td>Starship</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Fruited Sour</td>
+      <td>6%</td>
+      <td>Fruited sour with Raspberry and Grapefruit zest</td>
+    </tr>
+    <tr>
+      <td>US</td>
+      <td>Finback</td>
+      <td>BA Grazing On The Ordinary</td>
+      <td>1/3rd</td>
+      <td>3</td>
+      <td>Imperial Stout</td>
+      <td>11.3%</td>
+      <td>Barrel aged with coconut and hazelnut\nAllergens: Nuts</td>
+    </tr>
+    <tr>
+      <td>US</td>
+      <td>Finback</td>
+      <td>Kinda Brookyln</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>DIPA</td>
+      <td>8%</td>
+      <td>Double dry hopped dipa with nelson &amp; citra</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Five Points</td>
+      <td>Brick Field Brown</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Cask Pale</td>
+      <td>5.4%</td>
+      <td>A traditional English Brown Ale, with floral American hops. Malt-forward and robust, with flavours of demerara, smooth oak, and hazelnuts. Balanced by the floral, elderberry-like aromas of the Willamette hops.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Floc</td>
+      <td>Win Win Win</td>
+      <td>1/3rd</td>
+      <td>3</td>
+      <td>TIPA</td>
+      <td>10%</td>
+      <td>Triple IPA brewed with the awesome Messorem, layered with Nelson Sauvin, Citra, Motueka and Rakau T90 hops, amplified with Fresh Nelson Cold-Pressed Hop Juice from Freestyle. Saturated tropical fruit, white grape and citrus over a dense, smooth body.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Floc</td>
+      <td>Night Rain</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>DDH IPA</td>
+      <td>6.2%</td>
+      <td>Soft, saturated and dripping with tropical citrus. Motueka brings bright lime zest, Nectaron layers ripe peach and pineapple, while Citra ties it together with juicy orange and a smooth, hazy finish</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Floc</td>
+      <td>With You</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Fruited Sour</td>
+      <td>8%</td>
+      <td>A vibrant sour ale bursting with tropical flavours, featuring juicy mango and tangy passionfruit. Crisp, refreshing, with a perfect balance of tartness and fruity sweetness for a tropical escape</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Fourman</td>
+      <td>Chalk</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Pale</td>
+      <td>4.5%</td>
+      <td>Hazy pale with citra Nelson</td>
+    </tr>
+    <tr>
+      <td>ES</td>
+      <td>Garage</td>
+      <td>Soupita</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Session Pale</td>
+      <td>4%</td>
+      <td>Say hello to the lighter side of a classic. Soupita takes everything we love about SOUP and dials it into a lower-ABV format built for longer sessions without losing the depth. Expect a full hit of Citra and Mosaic, delivering bright layers of tangerine, peach skin, and soft tropicals, all balanced with a subtle herbal edge. The mouthfeel stays smooth and rounded thanks to a carefully tuned malt bill, rich in oats and wheat. Approachable, hazy, and packed with flavour, Soupita proves that big character doesn’t need big strength. One to keep on repeat as we enter into autumn.</td>
+    </tr>
+    <tr>
+      <td>ES</td>
+      <td>Garage</td>
+      <td>Lollies</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Fruited Sour</td>
+      <td>5%</td>
+      <td>Summer Sour Ale conditioned on guava, passion fruit and grapefruit</td>
+    </tr>
+    <tr>
+      <td>ES</td>
+      <td>Garage</td>
+      <td>Nabulio x Prizm</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>IPA</td>
+      <td>6.6%</td>
+      <td>Deep down, dank and dirty baby, our return collab this year with the guys from Montpellier - PRIZM.. Whilst on the away collab, we organised the return recipe. We've gone mid coast on this one, bringing the haze from the East Coast and the classic dry dankiness from the West Coast. Strawberries and grapefruit being the fruit forward notes from the Strata, but pairing that with Columbus, you are only guarenteed one thing (sorry Eoin) dank weed and a bit of 5km run armpit, herbal notes being rounded off with some grassy and pineapple notes from the Bru-1, playing the back up dancer roll in this showcase beer.</td>
+    </tr>
+    <tr>
+      <td>ES</td>
+      <td>Garage</td>
+      <td>Bronze x Sparkle</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>DIPA</td>
+      <td>8.5%</td>
+      <td>SUPERDELIC, NELSON, CITRA, IDAHO 7</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Ham Street Wines</td>
+      <td>Field Blend 23</td>
+      <td>125ml</td>
+      <td>3</td>
+      <td>Wine</td>
+      <td>10%</td>
+      <td>Grape: Pinot Meunier + Pinot Noir + Chardonnay + Bacchus + Pinot Gris This field blend is the lightest iteration yet. This is defo more in the hot pink zone than light red, although it's just as delicious. Great length and with that signature acid line carrying plenty of delicate florals and fruit. This is begging to be drunk with some sunshine</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Ham Street Wines</td>
+      <td>Col Fondo 24</td>
+      <td>125ml</td>
+      <td>3</td>
+      <td>Wine</td>
+      <td>11.5%</td>
+      <td>This lightly sparkling white is made using the traditional "Col Fondo" method, which involves fermenting the wine in the bottle on its lees (yeast). This gives it a characteristic complexity and flavour, as well as a longer shelf life. Textured and juicy, this is full of red fruit and mineral flavours.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Ham Street Wines</td>
+      <td>Pet Nat 25</td>
+      <td>125ml</td>
+      <td>3</td>
+      <td>Wine</td>
+      <td>10.4%</td>
+      <td>A fruit bomb of a wine with lashings of red cherry juice flavours. Carbonic maceration of Pinot Noir, Meunier and Bacchus co-fermented and bottled as a pet nat to finish its fermentation in bottle with no additions.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Ham Street Wines</td>
+      <td>Bacchus 24</td>
+      <td>125ml</td>
+      <td>3</td>
+      <td>Wine</td>
+      <td>10.2%</td>
+      <td>Biodynamic Bacchus grapes were harvested by hand. De-stemmed and macerated for 7 days. Fermentation with indigenous yeast. Bottled with no filtration, fining or added sulphur. This Wine: Natural skin contact wine from Kent! When Bacchus is macerated, you round off some of those aromatics and are left with something more refined. Still plenty of grapefruit and elderflower going on here and balanced brilliantly by refreshing minerals. Only 656 bottles produced.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Harveys</td>
+      <td>South Coast IPA</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Cask Pale</td>
+      <td>5%</td>
+      <td>Bold, hop-forward flavours of grapefruit, citrus and tropical fruit combine to create a balanced, full-bodied pale ale with a refreshing character and a satisfyingly bitter finish</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Harveys</td>
+      <td>Sussex Best</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Cask Pale</td>
+      <td>4%</td>
+      <td>A superbly balanced bitter with prominent hop character. Using a blend of four local hops, water filtered through the Sussex Downs over 30 years, and Harvey's unique 60 year old yeast strain, Harvey's Best Bitter is the embodiment of Sussex. IBC 2023: Gold | IBC 2021: Silver | WBA 2021: Bronze | WBA 2019: Silver | IBC 2019: Bronze | Winner of the Champion Best Bitter of Britain title at CAMRA’s Great British Beers Festival in 2005 and 2006</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Ideal Day</td>
+      <td>Under A Tree - Coolship IPA</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Mixed Ferm</td>
+      <td>5.3%</td>
+      <td>This is our first Coolship India Pale Ale, and in some ways the beer that expresses the impact of a coolship better than any other. The coolship and the hops we choose to brew with work together to transform into aromas and flavours far greater to the sum of their parts. There is a magic happening in that coolship that's revealing itself brew by brew. We use one farm for all of our hops, Hukin Hops in Kent. For us they produce the best in the UK and we work directly with growers wherever possible. An IPA is all about structure and balance, how to hang a large hop profile on a slender malt frame, how to hold your hops in equilibrium on a pinnacle. This is what makes them exciting to brew and rewarding when you land it. Full of all the things we love to brew with, heritage floor malted barley, raw regenerative YQ wheat and single farm UK hops.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Ideal Day</td>
+      <td>Way Out West - Crisp Pale</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>West Coast Pale</td>
+      <td>4.8%</td>
+      <td>This is a very different style of pale beer - it is dry and crisp with percussive bitterness. An abundance of floral and citrus notes work to complement the herbaceous and snappy cracked pepper base notes. We have drawn inspiration from both Franco-Belgian and British brewing traditions to create this beer.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Ideal Day</td>
+      <td>Beaming - Lemon Balm Sour</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Sour</td>
+      <td>4.3%</td>
+      <td>Lemon Balm Sour</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Ideal Day</td>
+      <td>Less Haste - Extra Lagered</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Lager</td>
+      <td>5.2%</td>
+      <td>Crispy and joyous lager with a lovely grassy and herbaceous hop character. Extra cold conditioning and ABV make this a very special, celebration lagered beer.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Left Handed Giant</td>
+      <td>Kiwi Aura - Pikimai Hops</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>DDH Pale</td>
+      <td>5.5%</td>
+      <td>DDH Pale with Nelson Sauvin, Rakau &amp; Wakatu. A return journey to the unique terroir &amp; dedicated growers of New Zealand; brewed in collaboration with Pikimai Hops. This choice selection of lots was grown &amp; harvested on the pristine waters of the Motueka River. Pikimai combine conventional with organic processes to improve &amp; preserve the land that provides these well-loved varieties. Lychee, Candied Lemon &amp; White Peach</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Left Handed Giant</td>
+      <td>Fondue x Track</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>DIPA</td>
+      <td>8%</td>
+      <td>Hazy DIPA with Riwaka, Motueka &amp; Citra. One of three special treats, shared with friends old &amp; new, for our 11th birthday. This one with Track. All three have been brewed using Best Ultra-Pale NP malt; a brand new product developed over the last year with our German maltster, BestMalz, that produces a rich texture that's creamy, fluffy &amp; very very fancy. For this indulgent Double IPA we've chosen fruit salad hop combination that features our hand-selected Citra &amp; a bounty of two delicious New Zealand varieties. Passion Fruit, Key Lime &amp; Seville Orange.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Left Handed Giant</td>
+      <td>Meringue x Factor</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>DDH IPA</td>
+      <td>6.8%</td>
+      <td>DDH IPA with Nelson Sauvin, Peacharine &amp; Citra® One of three special treats, shared with friends old &amp; new, for our 11th birthday. All three have been brewed using Best Ultra-Pale NP malt; a brand new product developed over the last year with our German maltster, BestMalz, that produces a rich texture that's creamy, fluffy &amp; very very fancy. Here we've paired our hand-selected Citra with a classy combination of New Zealand varieties; the rich sweetness of Peacharine layers beautifully with the thiol-heavy complexity of Nelson Sauvin. Pressed Grape, Saturn Peach &amp; Blood Orange</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Left Handed Giant</td>
+      <td>Sicilian Lemon Radler</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Radler</td>
+      <td>2.5%</td>
+      <td>A light and fragrant pale ale base, delicately hopped and blended with our in-house Sicilian lemonade. Expect a sweet, juicy dose of lemon, mellow bitterness and a thirst-quenching hit of zest to finish. A taste-of-summer smasher, perfect for the park, pub or patio.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Long Man</td>
+      <td>Citra Pale Ale</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Cask Pale</td>
+      <td>4.1%</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>CA</td>
+      <td>Messorem</td>
+      <td>C'est Peut-etre la vie XTRM TURBO</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Hazy DIPA</td>
+      <td>8%</td>
+      <td>DIPA - Nelson Sauvin, Motueka</td>
+    </tr>
+    <tr>
+      <td>CA</td>
+      <td>Messorem</td>
+      <td>Commutatio Pophin</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Hazy IPA</td>
+      <td>6.5%</td>
+      <td>IPA - Rakau, Riwaka, Citra</td>
+    </tr>
+    <tr>
+      <td>CA</td>
+      <td>Messorem</td>
+      <td>Demoliri #33 XTRM TURBO</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Hazy IPA</td>
+      <td>7%</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Mills</td>
+      <td>Okay</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Mixed Ferm</td>
+      <td>7.2%</td>
+      <td>Okay is a honey beer. It was made from a rich rye beer produced in May 2024. Spontaneous fermentation took place in old red Bordeaux barrels. Raw Scottish heather honey was added just prior to bottling. This provided sugar for conditioning as well as trapping the delicate earthy aromatics in the bottle. The resulting beer is relatively full with a sticky mouthfeel.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Mills</td>
+      <td>Biere de Coupage</td>
+      <td>1/2th</td>
+      <td>2</td>
+      <td>Mixed Ferm</td>
+      <td>4.6%</td>
+      <td>Beer of the festival for Postlip Beer Festival 2026</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Mills</td>
+      <td>Glass Pome</td>
+      <td>1/2th</td>
+      <td>2</td>
+      <td>Mixed Ferm</td>
+      <td>7.5%</td>
+      <td>Glass Pome is three-way beer, cider, perry hybrid. The beer portion is a blend of three spontaneously fermented pale beers made from malted barley, oats, wheat, and cane sugar. The cider is a wonderful Yarlington Mill single variety from Tom Oliver. The perry, a blend of the truly incomparable traditional perry-pear varieties found in the West Country. Also from Tom. Why? Because, the taste.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Newbarns</td>
+      <td>Weissbier</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Witbeer</td>
+      <td>5%</td>
+      <td>This super refreshing weiss bier is what you want at this time of the year. Grab a few cans, head to a sunny spot with your pals, and enjoy.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Newbarns</td>
+      <td>Turbo Shandy Raspberry</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Radler</td>
+      <td>4%</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Newbarns</td>
+      <td>Lite</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Lager</td>
+      <td>3.4%</td>
+      <td>A light lager made with Bere barley.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Newbarns</td>
+      <td>Pilsner</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Pilsner</td>
+      <td>4.2%</td>
+      <td>Our core-range Pils is our take on a classic German-style Pilsner. This is the beer we drink to celebrate the end of the working day. Clean, crisp, and refreshing with bitterness balanced by bready malt character. Brewed with 100% low colour Golden Promise malt, fermented with a German lager strain and hopped with classic noble varieties\nAllergens: Gluten Free</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Nightingale Cider</td>
+      <td>Cox - Bacchus Co-ferment</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Cider</td>
+      <td>6.5%</td>
+      <td>Allergens: Gluten Free, Sulphites</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Nightingale Cider</td>
+      <td>Night Bird Cider</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Cider</td>
+      <td>4.9%</td>
+      <td>Night Bird is our sophisticated yet easy drinking namesake, a sparkling fragrant and refreshing cider. A medium wild fermented cider made from dessert and culinary varieties grown on the Nightingale’s family farm and surrounding orchards. We've been making Night Bird since 2018, it was our first sparkling cider released under the Nightingale Cider banner. Varieties in blend: • Cox • Falstaff • Jonagold • Bramley\nAllergens: Gluten Free, Sulphites</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Nolia</td>
+      <td>Nolia - Can</td>
+      <td>Can</td>
+      <td>2</td>
+      <td>AF</td>
+      <td>0.5%</td>
+      <td>This premium alcohol free IPA is saturated in super fresh hops – hand-selected from individual farms in the Yakima Valley, US and in Nelson, NZ. Hazy, juicy and hangover-free with flavours of apricot, mango and lime mojitos. Less = More</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Nolia</td>
+      <td>Nolia</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>AF</td>
+      <td>0.5%</td>
+      <td>This premium alcohol free IPA is saturated in super fresh hops – hand-selected from individual farms in the Yakima Valley, US and in Nelson, NZ. Hazy, juicy and hangover-free with flavours of apricot, mango and lime mojitos. Less = More</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Northern Monk</td>
+      <td>Faith</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Pale</td>
+      <td>5%</td>
+      <td>A Modern Hazy Pale Ale packed with soft fruit flavours. Smooth, tropical and juicy. You’ve got to have Faith.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Northern Monk</td>
+      <td>ACE - Strawberry Lolly Pale</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Fruited Pale</td>
+      <td>5%</td>
+      <td>This newest release ACE is our twist on a certain fabulous choice from your local ice cream van.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Northern Monk</td>
+      <td>Patrons Project 16.07 Haze Outdoors // The Northern Pilgrimage</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>DIPA</td>
+      <td>8%</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Northern Monk</td>
+      <td>Fresh From The Old Flax Store // 7 OF 12 // x Totally Natural Solutions</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Pale</td>
+      <td>5.6%</td>
+      <td>Our first collab of the series this year sees us teaming up with Totally Natural Solutions for five formats of Nelson Sauvin! All of which come in swinging with whole load of white grape brightness and lemon ‘n’ lime sharpness. Backed up with a little of Wai-iti’s stone fruit softness and our reliable malt base.</td>
+    </tr>
+    <tr>
+      <td>US</td>
+      <td>Other Half</td>
+      <td>Party Business</td>
+      <td>1/3rd</td>
+      <td>3</td>
+      <td>TIPA</td>
+      <td>10.2%</td>
+      <td>A hazy Triple IPA densely hopped with a hand-selected blend of hops, including a fresh hop extract, giving notes of papaya, zippy citrus, berries and sweet tropical pineapple. Brewed with: Nelson Sauvin, Superdelic, Manalita, Waimea Cold Press Hop Kief</td>
+    </tr>
+    <tr>
+      <td>US</td>
+      <td>Other Half</td>
+      <td>Heart of Dankness</td>
+      <td>1/3rd</td>
+      <td>3</td>
+      <td>Hazy DIPA</td>
+      <td>8%</td>
+      <td>A hazy Imperial IPA packed with a hand-selected blend of hops giving notes of dank tropical forests, dank rich peach, punchy diesel tropical citrus, and red grapefruit</td>
+    </tr>
+    <tr>
+      <td>US</td>
+      <td>Other Half</td>
+      <td>HDHC Wee Wee Kiwi Pale</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>DDH Pale</td>
+      <td>5.3%</td>
+      <td>A hazy Pale Ale packed tight with intense hop character from hand-selected hops giving notes of soft sweet peach, tangerine, and tropical passionfruit punch. Brewed with: Nectaron, Riwaka, Citra, Nectaron Cryo, Nectaron Hop Kief</td>
+    </tr>
+    <tr>
+      <td>US</td>
+      <td>Other Half</td>
+      <td>Green Flowers</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>West Coast IPA</td>
+      <td>6.8%</td>
+      <td>Our West Coast IPA is brewed with a balanced bitterness and a blend of some of our favorite IPA hops. Brewed with 100% malted barley and hopped with Simcoe, Chinook, Nelson Sauvin and Columbus Cryo. Candied pineapple, mild pine and citrus, fruity white wine and a touch of dankness</td>
+    </tr>
+    <tr>
+      <td>PL</td>
+      <td>Pinta Barrel Project</td>
+      <td>Obsession Single Barrel</td>
+      <td>1/3rd</td>
+      <td>3</td>
+      <td>Imperial Stout</td>
+      <td>11%</td>
+      <td>Imperial Stout aged for 12 months in Porto barrel. Special Single Barrel release.</td>
+    </tr>
+    <tr>
+      <td>PL</td>
+      <td>Pinta Barrel Project</td>
+      <td>Patience 2026 (5th Anniversary)</td>
+      <td>1/3rd</td>
+      <td>3</td>
+      <td>Imperial Stout</td>
+      <td>12%</td>
+      <td>Imperial Stout w/ Coconut &amp; Vanilla. Aged for 14-18 months in MGP Rye Bourbon, Wyoming Whiskey and Maple Syrup Barrels. Adjuncts breakdown: - Roasted and Raw Coconut chips from Indonesia, - Vanilla pods from Cook Islands and Comoro Islands. Barrels Breakdown: 47% MGP Rye Bourbon 38% Wyoming Whiskey 15% Maple Syrup Special 5th Anniversary edition</td>
+    </tr>
+    <tr>
+      <td>PL</td>
+      <td>Pinta Barrel Project</td>
+      <td>Affection 2026 (5th Anniversary)</td>
+      <td>1/3rd</td>
+      <td>3</td>
+      <td>Imperial Stout</td>
+      <td>10%</td>
+      <td>Imperial Stout w/ Coconut, Coffee, Cocoa nibs and Vanilla. Aged for 14-18 months in Heaven Hill &amp; Wild Turkey Bourbon, Cognac and Pedro Ximénez. Adjuncts Breakdown: - Roasted and Raw Coconut chips from Indonesia, - Coffee beans from Brazil, - Cocoa nibs from Ecuador and Dominican Republic, - Vanilla pods from Papua New Guinea and Costa Rica. Barrels Breakdown: 20% Heaven Hill 20% Wild Turkey 30% Cognac 30% Sherry Pedro Ximenez Special 5th Anniversary edition</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Pomona Island</td>
+      <td>Ay Um Ba Day</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Pale</td>
+      <td>5.1%</td>
+      <td>Ey ey ba day, Pale with Cryo Sabro, Mosaic &amp; El Dorado. Ba wadladie day</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Pomona Island</td>
+      <td>I Saved Latin!</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Hazy IPA</td>
+      <td>6.2%</td>
+      <td>I drank an IPA with Cryo Citra, Cryo Talus, Mosaic &amp; Simcoe. What did you ever do?</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Pomona Island</td>
+      <td>Got A Haircut, Got A Silver Tooth</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Fruited Sour</td>
+      <td>5%</td>
+      <td>There’s only Mango, Pineapple, Guava &amp; Peach Gose for guys we know and us.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Pomona Island</td>
+      <td>Hotter Than A Pepper Sprout</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>DIPA</td>
+      <td>8%</td>
+      <td>I’m going to Joule and I’m gonna mess around. Yeah, I’m going to drink a DIPA with Cryo Citra, Cryo Simcoe, Cryo Mosaic, Citra HyperBoost &amp; Mosaic HyperBoost. Look out Kev and Kym</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Pour Choices Wines</td>
+      <td>Ark - Field Blend 2024</td>
+      <td>125ml</td>
+      <td>3</td>
+      <td>Wine</td>
+      <td>11.5%</td>
+      <td>Reichensteiner, Gamay, Bacchus, Pinot Gris, Pinot Noir, Chardonnay 11.5% 75cl A juicy peach rose with raspberries, redcurrant and British hedgerow on the nose with notes of citrus peel, pink grapefruit and pear drops. Crisp and refreshing on a summers day. A true field blend, this wine was made with a combination of singular and co-ferments using wild yeasts</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Pour Choices Wines</td>
+      <td>Quatro Mustachios - This is not a Negroni</td>
+      <td>125ml</td>
+      <td>3</td>
+      <td>Wine</td>
+      <td>11%</td>
+      <td>Handpicked at Bee Tree Vineyard, Sussex, October 6 2022. Partially hand destemmed before gentle foot crushing. Spontaneous fermentation. 12 days on skins with daily punch downs. Pressed to barrel on October 18 where it finished fermentation. Remained on full lees until bottling on April 1st. No additions.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Pour Choices Wines</td>
+      <td>Coes Farm - Chardonnay</td>
+      <td>125ml</td>
+      <td>3</td>
+      <td>Wine</td>
+      <td>12%</td>
+      <td>An English Organic Chardonnay handmade by our winemakers Daniel &amp; Nicola Ham</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Pour Choices Wines</td>
+      <td>Sandridge Barton - Figgie Daniel</td>
+      <td>125ml</td>
+      <td>3</td>
+      <td>Wine</td>
+      <td>10.5%</td>
+      <td>An energetic wine with a lively spritz. This wine is unfiltered and unfined and contains the lees in the bottle. Col Fondo means 'with the bottom' in Italian, referring to the leftover lees sediment. This is the method in which Prosecco was produced before being overly commercialised but is now regaining popularity. This wine is light and spritzy with green apple, lemon rind, elderflower and yeasty characters. We recommend a gentle shake before serving to distribute the sediment. Part of our new ‘Don’t Feed The Ponies’ range, this wine celebrates the wilder side of winemaking. Inspired by Dartmoor’s campaign to protect its roaming ponies, we’re donating 25p from every bottle to the Dartmoor Preservation Association. The River Dart, which shapes how our grapes grow, starts right in the heart of the moor.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Pour Choices Wines</td>
+      <td>Philip Harris - Talisman</td>
+      <td>125ml</td>
+      <td>3</td>
+      <td>Wine</td>
+      <td>12%</td>
+      <td>Family run organic vineyard &amp; wine producer near Hastings Elderflower, meadowsweet, blossom, plenty of aromatics and texture but also mineral and dry. Bacchus and Ortega grapes made in col fondo style - so a 2nd fermentation takes place in the bottle but no dosage added or disgorgement. The first fermentation was with wild yeast in concrete eggs. 1/3 of the bacchus received 14 days of skin maceration to increase complexity, aroma, and texture. It was bottled with less pressure than a champagne, 3 bar, and has so far spent 10 months on lees. It was a really satisfying wine to produce. A beautiful and powerful sparkling wine that is best paired with food, it can match strong dishes and always good with tapas and fish</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Queer Brewing</td>
+      <td>Flowers</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Witbeer</td>
+      <td>4%</td>
+      <td>Flowers are given in love and joy, celebration and commemoration, or just for the sake of it. Our wheat beer is as bright and vibrant as the most beautiful bouquet. Balancing the bold flavours of coriander seed and curaçao orange peel with the gentle snap of Saaz and Tettnang hops, Flowers is a modern twist on a classic style, for any occasion.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Queer Brewing</td>
+      <td>Swansong</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Lager</td>
+      <td>4.5%</td>
+      <td>Well, here she is, the last ever beer brewed in our big gay brewery. This is a bittersweet moment: we are naturally heartbroken to be closing down and saying goodbye to Queer Brewing, a brewery and business that has been a labour of love, passion, and hard work for seven wonderful (and exhausting!) years. But we're also filled beyond measure with pride: we've achieved more than we ever could have imagined, and we've done some pretty amazing and special things over the years, and that will last far longer than the feelings of grief and loss. From the start, our founder Lily's intentions for Queer Brewing were to exist as visibility and representation for the LGBTQ+ community in a field where there was little to none, and that's exactly what we did as we showed up for our community, and, in turn, our community showed up for and supported us as they joined us for the ride. None of what we've done would have been possible without the enduring, heartfelt, and greatly appreciated support of both the queer community and the beer world, and we'll remain eternally grateful for that love. We're lucky to have done something for this many years that changed people's lives, been present during beautiful life events, made people feel seen, safer, or part of something, but we experienced all of that and more in return from so many people we've encountered through Queer Brewing. And that's a gift we never could have believed possible when this queer little thing began</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Queer Brewing</td>
+      <td>Hot Girl Summer</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Fruited Sour</td>
+      <td>4.5%</td>
+      <td>Summer doesn’t last forever, but the love you build for yourself absolutely can. What better time to be unapologetically yourself, live your life on your terms, and do what feels good for you? Strap in for a long, hot summer of self love, baby. Hot Girl Summer is a gorgeously tart and refreshing peach, passionfruit, and guava sour. We've added over 400kg of real fruit puree, and finished it off with kveik yeast for even more tropical, fruity flavours. Name a better beer to accompany you on your hot girl summer, we dare ya. Aroma: peach, passionfruit, and guava. Palate: more of those gorgeous stone and tropical fruits with a soft body and refreshing acidity.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Rivington</td>
+      <td>One In The Morning</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>West Coast IPA</td>
+      <td>6.5%</td>
+      <td>A Triple Dry Hopped West Coast IPA, hopped with Columbus, Simcoe, Chinook, Simcoe Cryo, Citra Cryo, Centennial &amp; Nectaron</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Rivington</td>
+      <td>The Quiet Earth</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>DIPA</td>
+      <td>8%</td>
+      <td>A DIPA hopped with Galaxy, Citra, Citra Cryo, Citra Dynaboost, Nelson Sauvin, Nelson Sauvin Cryo &amp; Nelson Sauvin Hop Kief</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Rivington</td>
+      <td>Back In The Bits x Floc x Tripping Animals</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Imperial Stout</td>
+      <td>10%</td>
+      <td>An Imperial Stout, brewed with our mates Floc from Canterbury and Tripping Animals from Doral in Florida. Brewed with house roasted Peanuts, Cacao &amp; Madagascan Vanilla</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Rivington</td>
+      <td>No Day For A Do</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>DDH IPA</td>
+      <td>6%</td>
+      <td>A DDH IPA hopped entirely with Nelson Sauvin, which was hand selected from Freestyle Hops in New Zealand, as well as Nelson Sauvin Cryo &amp; Nelson Sauvin SubZero Hop Kief</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>South Downs Cider</td>
+      <td>Classic Dry</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Cider</td>
+      <td>4.5%</td>
+      <td>A still, medium-dry cider with a tart start and fresh apple finish.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>South Downs Cider</td>
+      <td>Elderflower Fizz</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Cider</td>
+      <td>4%</td>
+      <td>A sparkling medium cider, infused with fresh Sussex elderflowers.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>South Downs Cider</td>
+      <td>Silver Lining</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Cider</td>
+      <td>4.6%</td>
+      <td>The sparkling version of our medium cider. A medium sweet cider that is pleasingly crisp with a strong fresh apple flavour with a hint of Pineapple.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>The Kernel</td>
+      <td>Rice Lager x Duration</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Lager</td>
+      <td>4.5%</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>The Kernel</td>
+      <td>East India Pale Ale London 1897</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>IPA</td>
+      <td>6.2%</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>The Kernel</td>
+      <td>Export India Porter Citra</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Export Stout</td>
+      <td>5.8%</td>
+      <td>This started out as a recipe based on one from the Barclay Perkins brewery from 1855. We’ve tempered the roast character of the original recipe with some chocolate and crystal malts, but the main difference is that this is hopped in the way we would hop our pale ales and IPAs – late kettle additions and dry hopping. The result is a dark brown beer that promises coffee and cocoa, but then the hops bring lightness, brightness and fruit</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>The Kernel</td>
+      <td>Table Beer</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Table Beer</td>
+      <td>3%</td>
+      <td>A light pale ale, around 3% abv. Malted barley and rolled oats. First batch brewed in 2012, as an attempt to create a low-alcohol beer which did not suffer from being thin-bodied or lacking in character. Like our pale ales, hop aromas are the focus, with bitterness in balance.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Titch Hill Wines</td>
+      <td>Wild Combination</td>
+      <td>125ml</td>
+      <td>3</td>
+      <td>Wine</td>
+      <td>10%</td>
+      <td>Bright, juicy pet-nat at its best - a light red fizz with a spring in its step. Think crunchy apple, strawberry, pepper, and rose petals. It really is a wild combination: Schönburger, Bacchus, Pinot Noir, Reichensteiner, Rondo, Regent, and Seyval Blanc, all coming together in joyful harmony. Pressed and fermented with minimal intervention, bottled to finish as a pet-nat. The result? A playful, floral, fruit-forward wine that delivers instant refreshment.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Titch Hill Wines</td>
+      <td>Monad</td>
+      <td>125ml</td>
+      <td>3</td>
+      <td>Wine</td>
+      <td>10%</td>
+      <td>100 percent Divico from loamy clay on the edge of the Romney Marsh. Hand destemmed, one week on skins, then a gentle rest in old French oak. Inky, almost opaque, yet bright and fresh. Red fruit right up front, a mineral line running underneath. Structured, elegant, led by freshness rather than weight.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Titch Hill Wines</td>
+      <td>Soft Estate</td>
+      <td>125ml</td>
+      <td>3</td>
+      <td>Wine</td>
+      <td>10%</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Titch Hill Wines</td>
+      <td>Dreamhouse</td>
+      <td>125ml</td>
+      <td>3</td>
+      <td>Wine</td>
+      <td>10%</td>
+      <td>Dreamhouse is our imaginary take on a Titch Hill "house" wine - easy-drinking and full of charm. Bursting with bright notes of elderflower, zesty lemon peel, and crisp Bramley apple, it’s a joyful, unpretentious wine made for effortless enjoyment</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Track</td>
+      <td>Devotion</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>Gold Top DIPA</td>
+      <td>8.4%</td>
+      <td>Stare longingly with adoration into this Gold Top DIPA, as it satiates your soul with Citra, Galaxy, Mosaic and Nectaron. An enlivening burst of acidity drenches your tastebuds with grapefruit soda, nectarines in the sun, lime ice lollies and gooseberry preserve, before serving a sweet, tropical rush of mango sorbet, passionfruit, pineapple chunks and papaya. Be soothed by peach iced tea, honeydew melon, and lychee freshness, softly tickled by pine and sage, and let lactose swathe your palate in velvety, smooth, luxurious splendour\nAllergens: Lactose</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Track</td>
+      <td>Dreaming Of... DDH Superdelic</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>DDH IPA</td>
+      <td>7%</td>
+      <td>This fresh entry to the Dreaming Of... series is exclusively dry hopped with Superdelic, a relatively new hop variety from New Zealand. First crossed in 2012, it trialed as the experimental NZH-102 for a few years, before being fully rolled out in 2023. We've used it multiple times since then but never as a single hop, until now! We're getting english summer strawberries, fairground sweets, mango chutney and blackberry jam</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Track</td>
+      <td>Away We Go</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Table Beer</td>
+      <td>2.8%</td>
+      <td>A small hazy pale that still packs a punch! A light, juicy base is brought to life by Riwaka's bold and explosive hop expression, perforating your palate with pomelo, yuzu, papaya and lychee. Ideal for dinner time, weeknight catchups and all day sessioning.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Two Flints</td>
+      <td>Nobody Knows</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>IPA</td>
+      <td>6.5%</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Two Flints</td>
+      <td>Never End</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Pale</td>
+      <td>4.8%</td>
+      <td>Our aim with Never End was to create a pale ale with vibrant hop character but a beer that is eminently pintable. Using a new yeast strain that provides a pillowy body and a platform for the hops to shine, we’ve loaded it up with Nelson Sauvin, Citra and Rakau. Never End speaks to our brewing ethos where we’re always striving to improve, so expect plenty of tweaks along the way! We’re tasting charred pineapple, green wine gums and subtle red berry character</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Two Flints</td>
+      <td>Clara x Willibald</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Mexican Lager</td>
+      <td>4.6%</td>
+      <td>Maris Otter provides a base for subtle sweetness and a golden hue for this west coast inspired IPA hopped with 100% Yakima Chief Centennial and Centennial cryo. Leading with citrus notes of blood orange, tangerine and grapefruit with just a smidge of pine, it finishes dry with a gentle bitterness, delishhh.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Two Flints</td>
+      <td>NZ Santiago x Garage Project</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Pale</td>
+      <td>3.8%</td>
+      <td>We were honoured when our good mate Pete from Garage Project wanted to brew our beloved core beer Santiago back home in NZ. So we’re stoked to bring you this very special cross hemisphere collaboration. New Zealand Santiago is the same juicy, sessionable, pillowy beer you know and love but amped up with Freestyle Nelson Sauvin, Motueka and Peacharine for an extra burst of bright stone fruit character.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>UnBarred</td>
+      <td>Joosy</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Pale</td>
+      <td>5.1%</td>
+      <td>Our flagship beer, Joosy! Bursting with flavour, our popular 5.1% hazy pale ale leads with intense notes of citrus fruits, sweet tangerine, grapefruit &amp; stone fruits. We've taken two of our favourite US hops, Simcoe &amp; Amarillo, coupled them with a considerable amount of oats in the malt bill &amp; fermented with our house yeast strain to create a full, smooth bodied &amp; crushable pale.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>UnBarred</td>
+      <td>Moving Mountains</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>IPA</td>
+      <td>6.8%</td>
+      <td>West Coast IPA, brewed in collaboration with Baron Brewing. A four-hop transatlantic blend: US classics Simcoe and Columbus bring pine, resin and grapefruit, while New Zealand's Nelson Sauvin and Kohia Nelson SubZero Hop Kief add white wine, gooseberry, passionfruit and lime. A modern take on the West Coast for a dry, clean, super-smooth and resinous finish the hops are centre stage</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Verdant</td>
+      <td>When Myth and Science Agree</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Pale</td>
+      <td>5.2%</td>
+      <td>We are incredibly proud to announce our partnership with Plant One as a founding partner of their ‘No Trees No Seas’ campaign! Their mission? Restoring 500 hectares of fish forests over the next five years. Healthy woodlands mean healthy marine ecosystems, and vice versa; they're all part of one big, beautiful "flowscape." Naturally, we had to brew a collab beer to celebrate this project! WHEN MYTH AND SCIENCE AGREE (5.2%) // A super-sessionable Pale Ale packing a serious hop punch from both hemispheres (Nelson Sauvin, NZH-106, and Krush). Expect tropical, juicy fruits, crisp white grapes, and a beautifully light, dank finish.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Verdant</td>
+      <td>With The Benefit of Hind Legs</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Hazy IPA</td>
+      <td>6.5%</td>
+      <td>With The Benefit of Hind Legs stands tall, as a memorable 6.5% IPA. Dank, candied citrus-fruit hazy IPA in the quintessential Verdant style. The grist is inspired by our recent collab IPA with Track, “Flux: Phase 5”, for a nice and golden yellow colour. On the hop side, we’ve got amazing El Dorado CGX hops that are crazy sweetshop and fruity. On top of that, just a bit of Strata for some dank and oodles of NZH-101 for citrusy lemon and lime vibes. Yum!</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Verdant</td>
+      <td>Whale Sharks</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>DIPA</td>
+      <td>8.4%</td>
+      <td>A Triple Dry-hopped No Dextrose DIPA version of "Even Sharks Need Water". Simples</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Verdant</td>
+      <td>RadBulb</td>
+      <td>1/2th</td>
+      <td>1</td>
+      <td>Radler</td>
+      <td>2.4%</td>
+      <td>We’ve blended zesty lemonade with our beloved Extra Pale Ale Lightbulb, chocked full of lemon sherbet hops. At just 2.4%, RADBULB dials up the citrus, spritz, and sessionability with a pale ale backbone. Packed with a light malt character and gentle hoppy bitterness it’s juicy, tangy, sharp, and brilliantly balanced. And if you ask around the brewery, some would say it tastes just like a ramped-up version of San Pellegrino’s fancy Limonata. Absolutely delish!</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>We Can Be Friends</td>
+      <td>Solar Flare IPA x Brulo</td>
+      <td>1/2th</td>
+      <td>2</td>
+      <td>AF</td>
+      <td>0.5%</td>
+      <td>Brulo x We Can Be Friends Solar Flare is a big hazy, yellow IPA with a soft, pillowy mouthfeel and loaded with Motueka, Nectaron, and Citra hops.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>We Can Be Friends</td>
+      <td>Nothing To Get Hung About x Pomona Island</td>
+      <td>1/2th</td>
+      <td>2</td>
+      <td>AF</td>
+      <td>0.5%</td>
+      <td>Pomona Island x We Can Be Friends Let me drink this down, cause it’s an Alcohol Free Pale Ale hopped with Cryo Mosaic, Amplifire Riwaka and Citra.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>We Can Be Friends</td>
+      <td>High Five and Fly IPA x Makemake</td>
+      <td>1/2th</td>
+      <td>2</td>
+      <td>AF</td>
+      <td>0.5%</td>
+      <td>Makemake x We Can Be Friends. Saturated with a heavy dose of hops and expansive grain bill, the only thing you'll find lacking in this is the ABV. Citrus and stone fruit on a soft pillowy body.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>We Can Be Friends</td>
+      <td>Witch Lager</td>
+      <td>1/2th</td>
+      <td>2</td>
+      <td>AF</td>
+      <td>0.5%</td>
+      <td>Crispy, cauldron brewed lager. Fresh Saaz brings a lemon bitterness to the coven.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>We Can Be Friends</td>
+      <td>Cosmic Groove Strata &amp; Superdelic</td>
+      <td>1/2th</td>
+      <td>2</td>
+      <td>AF</td>
+      <td>0.5%</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>We Can Be Friends</td>
+      <td>Voodoo Motueka</td>
+      <td>1/2th</td>
+      <td>2</td>
+      <td>AF</td>
+      <td>0.5%</td>
+      <td>Fresh crop Motueka at several different stages of the brew. Fresh squeezed lime, bitter candied orange and tropical fruits on a fluffy, full bodied base. Alcohol Free</td>
+    </tr>
+    <tr>
+      <td>CA</td>
+      <td>Willibald</td>
+      <td>Gazzetta</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Italian Pils</td>
+      <td>5%</td>
+      <td>Italian Pilsner. Bittered with Saphir.</td>
+    </tr>
+    <tr>
+      <td>CA</td>
+      <td>Willibald</td>
+      <td>Supernova</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>IPA</td>
+      <td>6.9%</td>
+      <td>IPA with Luna, Vic Secret, and Galaxy.</td>
+    </tr>
+    <tr>
+      <td>CA</td>
+      <td>Willibald</td>
+      <td>Cosmic</td>
+      <td>1/3rd</td>
+      <td>2</td>
+      <td>West Coast IPA</td>
+      <td>6%</td>
+      <td>West Coast IPA dry hopped with Chinook, Centennial, Cascade, and Simcoe.</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Woodshedding</td>
+      <td>Landbier</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>Lager</td>
+      <td>4.6%</td>
+      <td>Landbier is a pale lager that uses regeneratively grown grains. We use both David Wilson’s Plumage Archer heritage barley and Fred Price’s YQ population wheat which actually gives back to the land. The increased genetic diversity in the field as part of a rotating farming systems that integrate livestock whilst avoiding the use of chemical inputs, creates much healthier soils to enable the continued growth of quality, nutrient dense grains</td>
+    </tr>
+    <tr>
+      <td>GB</td>
+      <td>Woodshedding</td>
+      <td>Tobi - English IPA</td>
+      <td>1/3rd</td>
+      <td>1</td>
+      <td>IPA</td>
+      <td>5.3%</td>
+      <td>Mix of organic heritage barley and regeneratively farmed Mixed population wheat serve as bases with ripe berry and orange marmalade flavour with a distinct resin character from all English hops Northdown and Admiral</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<script>
+const table = document.getElementById("beerTable");
+const rows = Array.from(table.tBodies[0].rows);
+const minimumSlider = document.getElementById("minimumAbv");
+const maximumSlider = document.getElementById("maximumAbv");
+const minimumLabel = document.getElementById("minimumAbvLabel");
+const maximumLabel = document.getElementById("maximumAbvLabel");
+const sliderSelection = document.getElementById("sliderSelection");
+const countryFilter = document.getElementById("countryFilter");
+const brewerFilter = document.getElementById("brewerFilter");
+const typeFilter = document.getElementById("typeFilter");
+const resultCount = document.getElementById("resultCount");
+
+const absoluteMinimum = Number(minimumSlider.min);
+const absoluteMaximum = Number(maximumSlider.max);
+
+function cellText(row, columnIndex) {
+    return row.cells[columnIndex].textContent.trim();
+}
+
+function populateDropdown(select, columnIndex) {
+    const values = [...new Set(
+        rows.map(row => cellText(row, columnIndex)).filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b));
+
+    values.forEach(value => {
+        select.add(new Option(value, value));
+    });
+}
+
+function updateSliderDisplay(minimum, maximum) {
+    const totalRange = absoluteMaximum - absoluteMinimum;
+    const leftPercent =
+        ((minimum - absoluteMinimum) / totalRange) * 100;
+    const rightPercent =
+        ((absoluteMaximum - maximum) / totalRange) * 100;
+
+    sliderSelection.style.left = `${leftPercent}%`;
+    sliderSelection.style.right = `${rightPercent}%`;
+
+    minimumLabel.textContent = `Minimum: ${minimum.toFixed(1)}%`;
+    maximumLabel.textContent = `Maximum: ${maximum.toFixed(1)}%`;
+
+    minimumSlider.style.zIndex =
+        minimum >= absoluteMaximum - 0.5 ? "5" : "3";
+}
+
+function applyFilters(event) {
+    let minimum = Number(minimumSlider.value);
+    let maximum = Number(maximumSlider.value);
+
+    if (minimum > maximum) {
+        if (event && event.target === minimumSlider) {
+            minimumSlider.value = maximum;
+            minimum = maximum;
+        } else {
+            maximumSlider.value = minimum;
+            maximum = minimum;
+        }
+    }
+
+    updateSliderDisplay(minimum, maximum);
+
+    const fullAbvRange =
+        minimum <= absoluteMinimum &&
+        maximum >= absoluteMaximum;
+
+    let visibleRows = 0;
+
+    rows.forEach(row => {
+        const country = cellText(row, 0);
+        const brewer = cellText(row, 1);
+        const type = cellText(row, 5);
+        const abv = Number.parseFloat(cellText(row, 6));
+
+        const countryMatches =
+            !countryFilter.value ||
+            country === countryFilter.value;
+
+        const brewerMatches =
+            !brewerFilter.value ||
+            brewer === brewerFilter.value;
+
+        const typeMatches =
+            !typeFilter.value ||
+            type === typeFilter.value;
+
+        const abvMatches = Number.isFinite(abv)
+            ? abv >= minimum && abv <= maximum
+            : fullAbvRange;
+
+        const visible =
+            countryMatches &&
+            brewerMatches &&
+            typeMatches &&
+            abvMatches;
+
+        row.hidden = !visible;
+
+        if (visible) {
+            visibleRows += 1;
+        }
+    });
+
+    resultCount.textContent =
+        `Showing ${visibleRows} of ${rows.length} drinks`;
+}
+
+function resetFilters() {
+    minimumSlider.value = absoluteMinimum;
+    maximumSlider.value = absoluteMaximum;
+    countryFilter.value = "";
+    brewerFilter.value = "";
+    typeFilter.value = "";
+    applyFilters();
+}
+
+populateDropdown(countryFilter, 0);
+populateDropdown(brewerFilter, 1);
+populateDropdown(typeFilter, 5);
+
+minimumSlider.addEventListener("input", applyFilters);
+maximumSlider.addEventListener("input", applyFilters);
+countryFilter.addEventListener("change", applyFilters);
+brewerFilter.addEventListener("change", applyFilters);
+typeFilter.addEventListener("change", applyFilters);
+
+document
+    .getElementById("resetFilters")
+    .addEventListener("click", resetFilters);
+
+applyFilters();
+</script>
+</body>
+</html>
